@@ -56,3 +56,10 @@ def add_user_to_whitelist(discord_id: int, user_id: str):
     user = Whitelist(user_id=user_id, discord_id=discord_id)
     db.add(user)
     db.commit()
+
+
+def delete_user_from_whitelist(discord_id: int):
+    db = next(get_db())
+    user = db.query(Whitelist).get(discord_id)
+    db.delete(user)
+    db.commit()

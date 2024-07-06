@@ -19,19 +19,38 @@ class FalloutZbtCog(commands.Cog):
         self.bot = _bot
         self.client = client
 
+    async def check_whitelist_users(self):
+        users = crud.get_users_from_whitelist()
+        role = self.guild.get_role(role_id)
+        for user in users:
+            member = self.guild.get_member(user.discord_id)
+            if member is None:
+                crud.delete_user_from_whitelist(user.discord_id)
+                continue
+            if role not in member.roles:
+                crud.delete_user_from_whitelist(user.discord_id)
+                continue
     async def check_users(self):
         users = crud.get_users()
         role = self.guild.get_role(role_id)
         for user in users:
             member = self.guild.get_member(user.discord_id)
             if member is None:
+                if crud.discord_id_was_found_in_whitelist(user.discord_id):
+                    crud.delete_user_from_whitelist(user.discord_id)
                 continue
             if role not in member.roles:
+                if crud.discord_id_was_found_in_whitelist(user.discord_id):
+                    crud.delete_user_from_whitelist(user.discord_id)
                 continue
             if not crud.discord_id_was_found_in_whitelist(user.discord_id):
                 crud.add_user_to_whitelist(user.discord_id, crud.get_game_id_by_discord_id(user.discord_id))
-                channel = self.guild.get_channel(channel_for_alert_id)
-                await channel.send(f"{member.mention}, вы добавлены в вайтлист.")
+                try:
+                    channel = member.create_dm()
+                    await channel.send(f"{member.mention}, вы добавлены в вайтлист.")
+                except:
+                    channel = self.guild.get_channel(channel_for_alert_id)
+                    await channel.send(f"{member.mention}, вы добавлены в вайтлист.")
         update_file()
 
     async def check_role(self):
@@ -61,13 +80,22 @@ class FalloutZbtCog(commands.Cog):
         await self.check_users()
 
     @commands.Cog.listener()
+    async def on_member_remove(self, member: discord.Member):
+        if crud.discord_id_was_found_in_whitelist(member.id):
+            crud.delete_user_from_whitelist(member.id)
+
+    @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
+
         if before.roles == after.roles:
             return
         target_role = after.guild.get_role(role_id)
         if target_role in before.roles:
+            if target_role not in after.roles:
+                if crud.discord_id_was_found_in_whitelist(after.id):
+                    crud.delete_user_from_whitelist(after.id)
             return
-        if target_role not in after.roles:
+        if crud.discord_id_was_found_in_whitelist(after.id):
             return
         channel = self.guild.get_channel(channel_for_alert_id)
         if crud.discord_id_was_found_in_users_db(after.id):
@@ -75,7 +103,6 @@ class FalloutZbtCog(commands.Cog):
 
             await channel.send(f"{after.mention}, вы добавлены в вайтлист.")
         else:
-
             try:
                 await after.create_dm()
                 await after.dm_channel.send("Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
@@ -91,6 +118,7 @@ class FalloutZbtCog(commands.Cog):
     async def on_ready(self):
         self.guild = self.bot.get_guild(server_id)
         self.checking_db_task.start()
+        await self.check_whitelist_users()
         await self.check_role()
         if not db_was_modify():
             return
