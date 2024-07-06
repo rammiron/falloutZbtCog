@@ -15,12 +15,9 @@ class FalloutZbtCog(commands.Cog):
     client = None
     guild = None
 
-
     def __init__(self, _bot: discord.Bot, client: discord.Client):
         self.bot = _bot
         self.client = client
-
-
 
     async def check_users(self):
         users = crud.get_users()
@@ -36,6 +33,19 @@ class FalloutZbtCog(commands.Cog):
                 channel = self.guild.get_channel(channel_for_alert_id)
                 await channel.send(f"{member.mention}, вы добавлены в вайтлист.")
         update_file()
+
+    async def check_role(self):
+        role = self.guild.get_role(role_id)
+        members_with_role = role.members
+        for member in members_with_role:
+            if crud.discord_id_was_found_in_users_db(member.id):
+                continue
+            channel = self.guild.get_channel(channel_for_alert_id)
+            await channel.send(f"{member.mention}, просим вас проверить личные сообщения для присоединения к ЗБТ."
+                               f" Убедитесь что у вас открыт лс.")
+            await member.create_dm()
+            await member.dm_channel.send("Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
+                                         " где вместо NAME нужно указать игровой ник (сикей).")
 
     @tasks.loop(seconds=time_for_checking_db)
     async def checking_db_task(self):
@@ -64,11 +74,11 @@ class FalloutZbtCog(commands.Cog):
             await after.dm_channel.send("Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
                                         " где вместо NAME нужно указать игровой ник (сикей).")
 
-
     @commands.Cog.listener()
     async def on_ready(self):
         self.guild = self.bot.get_guild(server_id)
         self.checking_db_task.start()
+        await self.check_role()
         if not db_was_modify():
             return
         await self.check_users()
