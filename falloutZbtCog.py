@@ -41,11 +41,18 @@ class FalloutZbtCog(commands.Cog):
             if crud.discord_id_was_found_in_users_db(member.id):
                 continue
             channel = self.guild.get_channel(channel_for_alert_id)
-            await channel.send(f"{member.mention}, просим вас проверить личные сообщения для присоединения к ЗБТ."
-                               f" Убедитесь что у вас открыт лс.")
-            await member.create_dm()
-            await member.dm_channel.send("Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
-                                         " где вместо NAME нужно указать игровой ник (сикей).")
+
+            try:
+                await member.create_dm()
+                await member.dm_channel.send(
+                    "Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
+                    " где вместо NAME нужно указать игровой ник (сикей).")
+                await channel.send(f"{member.mention}, просим вас проверить личные сообщения для присоединения к ЗБТ."
+                                   f" Убедитесь что у вас открыт лс.")
+            except:
+                await channel.send(f"{member.mention}, у вас закрыт лс! "
+                                   f"Чтобы присоединиться к ЗБТ, напишите мне в личные сообщения"
+                                   f" /setnick, для привязки дискорда.")
 
     @tasks.loop(seconds=time_for_checking_db)
     async def checking_db_task(self):
@@ -68,11 +75,17 @@ class FalloutZbtCog(commands.Cog):
 
             await channel.send(f"{after.mention}, вы добавлены в вайтлист.")
         else:
-            await channel.send(f"{after.mention}, просим вас проверить личные сообщения для присоединения к ЗБТ."
-                               f" Убедитесь что у вас открыт лс.")
-            await after.create_dm()
-            await after.dm_channel.send("Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
-                                        " где вместо NAME нужно указать игровой ник (сикей).")
+
+            try:
+                await after.create_dm()
+                await after.dm_channel.send("Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
+                                            " где вместо NAME нужно указать игровой ник (сикей).")
+                await channel.send(f"{after.mention}, просим вас проверить личные сообщения для присоединения к ЗБТ."
+                                   f" Убедитесь что у вас открыт лс.")
+            except:
+                await channel.send(f"{after.mention}, у вас закрыт лс! "
+                                   f"Чтобы присоединиться к ЗБТ, напишите мне в личные сообщения"
+                                   f" /setnick, для привязки дискорда.")
 
     @commands.Cog.listener()
     async def on_ready(self):
