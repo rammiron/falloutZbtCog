@@ -15,38 +15,47 @@ class FalloutZbtCog(commands.Cog):
     client = None
     guild = None
 
-    def __init__(self, _bot: discord.Bot, client: discord.Client):
+    def __init__(self, _bot: discord.Bot):
         self.bot = _bot
-        self.client = client
+
+    async def try_send_message(self, private_message, public_message, member: discord.Member):
+
+        try:
+            await member.create_dm()
+            await member.dm_channel.send(private_message)
+        except:
+            channel = self.guild.get_channel(channel_for_alert_id)
+            await channel.send(public_message)
 
     async def check_whitelist_users(self):
         users = crud.get_users_from_whitelist()
         role = self.guild.get_role(role_id)
         for user in users:
-            member = self.guild.get_member(user.discord_id)
+            member = self.guild.get_member(user.user_id)
             if member is None:
-                crud.delete_user_from_whitelist(user.discord_id)
+                crud.delete_user_from_whitelist(user.user_id)
                 continue
             if role not in member.roles:
-                crud.delete_user_from_whitelist(user.discord_id)
+                crud.delete_user_from_whitelist(user.user_id)
                 continue
+
     async def check_users(self):
         users = crud.get_users()
         role = self.guild.get_role(role_id)
         for user in users:
             member = self.guild.get_member(user.discord_id)
             if member is None:
-                if crud.discord_id_was_found_in_whitelist(user.discord_id):
-                    crud.delete_user_from_whitelist(user.discord_id)
+                if crud.user_id_was_found_in_whitelist(user.user_id):
+                    crud.delete_user_from_whitelist(user.user_id)
                 continue
             if role not in member.roles:
-                if crud.discord_id_was_found_in_whitelist(user.discord_id):
-                    crud.delete_user_from_whitelist(user.discord_id)
+                if crud.user_id_was_found_in_whitelist(user.user_id):
+                    crud.delete_user_from_whitelist(user.user_id)
                 continue
-            if not crud.discord_id_was_found_in_whitelist(user.discord_id):
-                crud.add_user_to_whitelist(user.discord_id, crud.get_game_id_by_discord_id(user.discord_id))
+            if not crud.user_id_was_found_in_whitelist(user.user_id):
+                crud.add_user_to_whitelist(user.user_id)
                 try:
-                    channel = member.create_dm()
+                    channel = await member.create_dm()
                     await channel.send(f"{member.mention}, вы добавлены в вайтлист.")
                 except:
                     channel = self.guild.get_channel(channel_for_alert_id)
@@ -57,21 +66,20 @@ class FalloutZbtCog(commands.Cog):
         role = self.guild.get_role(role_id)
         members_with_role = role.members
         for member in members_with_role:
-            if crud.discord_id_was_found_in_users_db(member.id):
+            if crud.user_id_was_found_in_whitelist(crud.get_game_id_by_discord_id(member.id)):
                 continue
-            channel = self.guild.get_channel(channel_for_alert_id)
 
-            try:
-                await member.create_dm()
-                await member.dm_channel.send(
-                    "Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
-                    " где вместо NAME нужно указать игровой ник (сикей).")
-                await channel.send(f"{member.mention}, просим вас проверить личные сообщения для присоединения к ЗБТ."
-                                   f" Убедитесь что у вас открыт лс.")
-            except:
-                await channel.send(f"{member.mention}, у вас закрыт лс! "
-                                   f"Чтобы присоединиться к ЗБТ, напишите мне в личные сообщения"
-                                   f" /setnick, для привязки дискорда.")
+            if crud.discord_id_was_found_in_users_db(member.id):
+                crud.add_user_to_whitelist(crud.get_game_id_by_discord_id(member.id))
+                await self.try_send_message("Вы добавлены в вайтлист фоллаута.",
+                                            f"{member.mention}, вы добавлены в вайтлист.",
+                                            member)
+                continue
+            await self.try_send_message("Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
+                                        " где вместо NAME нужно указать игровой ник (сикей).",
+                                        f"{member.mention}, "
+                                        f"для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
+                                        " где вместо NAME нужно указать игровой ник (сикей).", member)
 
     @tasks.loop(seconds=time_for_checking_db)
     async def checking_db_task(self):
@@ -81,8 +89,8 @@ class FalloutZbtCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        if crud.discord_id_was_found_in_whitelist(member.id):
-            crud.delete_user_from_whitelist(member.id)
+        if crud.user_id_was_found_in_whitelist(crud.get_game_id_by_discord_id(member.id)):
+            crud.delete_user_from_whitelist(crud.get_game_id_by_discord_id(member.id))
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
@@ -92,30 +100,28 @@ class FalloutZbtCog(commands.Cog):
         target_role = after.guild.get_role(role_id)
         if target_role in before.roles:
             if target_role not in after.roles:
-                if crud.discord_id_was_found_in_whitelist(after.id):
-                    crud.delete_user_from_whitelist(after.id)
+                if crud.user_id_was_found_in_whitelist(crud.get_game_id_by_discord_id(after.id)):
+                    crud.delete_user_from_whitelist(crud.get_game_id_by_discord_id(after.id))
             return
-        if crud.discord_id_was_found_in_whitelist(after.id):
+        if crud.user_id_was_found_in_whitelist(crud.get_game_id_by_discord_id(after.id)):
             return
-        channel = self.guild.get_channel(channel_for_alert_id)
         if crud.discord_id_was_found_in_users_db(after.id):
-            crud.add_user_to_whitelist(after.id, crud.get_game_id_by_discord_id(after.id))
+            crud.add_user_to_whitelist(crud.get_game_id_by_discord_id(after.id))
 
-            await channel.send(f"{after.mention}, вы добавлены в вайтлист.")
-        else:
-            try:
-                await after.create_dm()
-                await after.dm_channel.send("Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
-                                            " где вместо NAME нужно указать игровой ник (сикей).")
-                await channel.send(f"{after.mention}, просим вас проверить личные сообщения для присоединения к ЗБТ."
-                                   f" Убедитесь что у вас открыт лс.")
-            except:
-                await channel.send(f"{after.mention}, у вас закрыт лс! "
-                                   f"Чтобы присоединиться к ЗБТ, напишите мне в личные сообщения"
-                                   f" /setnick, для привязки дискорда.")
+            await self.try_send_message("Вы добавлены в вайтлист фоллаута.",
+                                        f"{after.mention}, вы добавлены в вайтлист.",
+                                        after)
+            return
+        await self.try_send_message("Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
+                                    " где вместо NAME нужно указать игровой ник (сикей).",
+                                    f"{after.mention}, похоже у вас закрыт лс,"
+                                    f"для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
+                                    " где вместо NAME нужно указать игровой ник (сикей).", after)
 
     @commands.Cog.listener()
     async def on_ready(self):
+        print("работает, алилуя")
+        Base.metadata.create_all(engine)
         self.guild = self.bot.get_guild(server_id)
         self.checking_db_task.start()
         await self.check_whitelist_users()

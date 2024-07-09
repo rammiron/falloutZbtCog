@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, Text
+from sqlalchemy import Column, Integer, Text, Boolean
 from sqlalchemy.orm import DeclarativeBase
+from .db_alchemy import init_db
 
 
 class Base(DeclarativeBase):
@@ -7,12 +8,13 @@ class Base(DeclarativeBase):
 
 
 class User(Base):
-    __tablename__ = "user"
+    __tablename__ = "discord_user"
     discord_id = Column(Integer, nullable=False, primary_key=True)
     user_id = Column(Text, nullable=False)
+    activated = Column(Boolean, nullable=False, default=True)
+    id = Column(Integer, nullable=False, autoincrement=True)
 
 
 class Whitelist(Base):
     __tablename__ = "whitelist"
-    discord_id = Column(Integer, nullable=False, primary_key=True)
-    user_id = Column(Text, nullable=False)
+    user_id = Column(Text, nullable=False, primary_key=True)
