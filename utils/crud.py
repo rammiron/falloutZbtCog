@@ -54,6 +54,7 @@ def get_game_id_by_discord_id(discord_id: int):
 
 
 def add_user_to_whitelist(user_id: str):
+    print("add to whitelist: " + str(user_id))
     db = next(get_db())
     user = Whitelist(user_id=user_id)
     db.add(user)

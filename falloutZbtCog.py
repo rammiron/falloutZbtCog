@@ -4,13 +4,9 @@ from discord.ext import commands, tasks
 if "cogs" in __name__:
     from .utils import crud
     from .utils.json_crud import db_was_modify, update_file, get_config
-    from .utils.models import Base
 else:
     from utils import crud
     from utils.json_crud import db_was_modify, update_file, get_config
-    from utils.models import Base
-
-from utils.db_alchemy import engine
 
 config = get_config()
 role_id = config["target_role_id"]
@@ -64,17 +60,19 @@ class FalloutZbtCog(commands.Cog):
                 crud.add_user_to_whitelist(user.user_id)
                 try:
                     channel = await member.create_dm()
-                    await channel.send(f"{member.mention}, вы добавлены в вайтлист.")
+                    await channel.send("Вы добавлены в вайтлист фоллаута.")
                 except:
                     channel = self.guild.get_channel(channel_for_alert_id)
                     await channel.send(f"{member.mention}, вы добавлены в вайтлист.")
+            else:
+                continue
         update_file()
 
     async def check_role(self):
         role = self.guild.get_role(role_id)
         members_with_role = role.members
         for member in members_with_role:
-            if crud.user_id_was_found_in_whitelist(crud.get_game_id_by_discord_id(member.id)):
+            if not crud.user_id_was_found_in_whitelist(crud.get_game_id_by_discord_id(member.id)):
                 continue
 
             if crud.discord_id_was_found_in_users_db(member.id):
@@ -93,7 +91,9 @@ class FalloutZbtCog(commands.Cog):
     async def checking_db_task(self):
         if not db_was_modify():
             return
+        await self.check_whitelist_users()
         await self.check_users()
+
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
@@ -129,7 +129,6 @@ class FalloutZbtCog(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("работает, алилуя")
-        Base.metadata.create_all(engine)
         self.guild = self.bot.get_guild(server_id)
         self.checking_db_task.start()
         await self.check_whitelist_users()
