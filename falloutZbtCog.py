@@ -1,8 +1,16 @@
 import discord
 from discord.ext import commands, tasks
 
-import crud
-from json_crud import db_was_modify, update_file, get_config
+if "cogs" in __name__:
+    from .utils import crud
+    from .utils.json_crud import db_was_modify, update_file, get_config
+    from .utils.models import Base
+else:
+    from utils import crud
+    from utils.json_crud import db_was_modify, update_file, get_config
+    from utils.models import Base
+
+from utils.db_alchemy import engine
 
 config = get_config()
 role_id = config["target_role_id"]

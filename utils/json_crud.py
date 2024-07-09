@@ -1,14 +1,15 @@
 import json
 import os
-from crud import get_users_count
+from .crud import get_users_count
 
-path = "utils\\files\\users_count.json"
-config_path = "utils\\files\\config.json"
+path = os.path.join(os.path.dirname(__file__), 'files', 'users_count.json')
+config_path = os.path.join(os.path.dirname(__file__), 'files', 'config.json')
 
 
 def get_config():
     with open(config_path, "r") as read_file:
         return json.load(read_file)
+
 
 def file_was_created():
     if os.path.exists(path):
@@ -27,9 +28,7 @@ def get_users_count_from_js():
     if not file_was_created():
         create_file()
     with open(path, "r") as read_file:
-
         return json.load(read_file)
-
 
 
 def update_file():
