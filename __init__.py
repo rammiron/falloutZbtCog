@@ -1,4 +1,4 @@
-from falloutZbtCog import FalloutZbtCog
+from .falloutZbtCog import FalloutZbtCog
 
 
 def setup(bot):
