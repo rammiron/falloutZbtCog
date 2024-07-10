@@ -81,11 +81,11 @@ class FalloutZbtCog(commands.Cog):
                                             f"{member.mention}, вы добавлены в вайтлист.",
                                             member)
                 continue
-            await self.try_send_message("Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
-                                        " где вместо NAME нужно указать игровой ник (сикей).",
+            await self.try_send_message("Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /gift,"
+                                        " где вместо nick нужно указать игровой ник (сикей).",
                                         f"{member.mention}, "
-                                        f"для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
-                                        " где вместо NAME нужно указать игровой ник (сикей).", member)
+                                        f"для присоединения к ЗБТ привяжите свой дискорд с помощью команды /gift,"
+                                        " где вместо nick нужно указать игровой ник (сикей).", member)
 
     @tasks.loop(seconds=time_for_checking_db)
     async def checking_db_task(self):
@@ -120,11 +120,11 @@ class FalloutZbtCog(commands.Cog):
                                         f"{after.mention}, вы добавлены в вайтлист.",
                                         after)
             return
-        await self.try_send_message("Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
-                                    " где вместо NAME нужно указать игровой ник (сикей).",
+        await self.try_send_message("Для присоединения к ЗБТ привяжите свой дискорд с помощью команды /gift ,"
+                                    " где вместо nick нужно указать игровой ник (сикей).",
                                     f"{after.mention}, похоже у вас закрыт лс,"
-                                    f"для присоединения к ЗБТ привяжите свой дискорд с помощью команды /setnick,"
-                                    " где вместо NAME нужно указать игровой ник (сикей).", after)
+                                    f"для присоединения к ЗБТ привяжите свой дискорд с помощью команды /gift,"
+                                    " где вместо nick нужно указать игровой ник (сикей).", after)
 
     @commands.Cog.listener()
     async def on_ready(self):
