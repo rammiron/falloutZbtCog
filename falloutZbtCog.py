@@ -16,7 +16,6 @@ time_for_checking_db = config["time_for_checking_db"]
 
 
 class FalloutZbtCog(commands.Cog):
-    client = None
     guild = None
 
     def __init__(self, _bot: discord.Bot):
@@ -35,7 +34,7 @@ class FalloutZbtCog(commands.Cog):
         users = crud.get_users_from_whitelist()
         role = self.guild.get_role(role_id)
         for user in users:
-            member = self.guild.get_member(user.user_id)
+            member = self.guild.get_member(crud.get_discord_id_by_game_id(user.user_id))
             if member is None:
                 crud.delete_user_from_whitelist(user.user_id)
                 continue
@@ -56,6 +55,8 @@ class FalloutZbtCog(commands.Cog):
                 if crud.user_id_was_found_in_whitelist(user.user_id):
                     crud.delete_user_from_whitelist(user.user_id)
                 continue
+            if not crud.player_was_found(user.user_id):
+                continue
             if not crud.user_id_was_found_in_whitelist(user.user_id):
                 crud.add_user_to_whitelist(user.user_id)
                 try:
@@ -72,9 +73,10 @@ class FalloutZbtCog(commands.Cog):
         role = self.guild.get_role(role_id)
         members_with_role = role.members
         for member in members_with_role:
-            if not crud.user_id_was_found_in_whitelist(crud.get_game_id_by_discord_id(member.id)):
+            if crud.user_id_was_found_in_whitelist(crud.get_game_id_by_discord_id(member.id)):
                 continue
-
+            if not crud.player_was_found(crud.get_game_id_by_discord_id(member.id)):
+                continue
             if crud.discord_id_was_found_in_users_db(member.id):
                 crud.add_user_to_whitelist(crud.get_game_id_by_discord_id(member.id))
                 await self.try_send_message("Вы добавлены в вайтлист фоллаута.",
@@ -93,7 +95,6 @@ class FalloutZbtCog(commands.Cog):
             return
         await self.check_whitelist_users()
         await self.check_users()
-
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
@@ -128,7 +129,6 @@ class FalloutZbtCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print("работает, алилуя")
         self.guild = self.bot.get_guild(server_id)
         self.checking_db_task.start()
         await self.check_whitelist_users()
